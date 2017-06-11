@@ -17,7 +17,7 @@ The are 4 level for the four main operations. Once completed level 4 it starts a
 
 # Install
 
-Allow your device to install app from unknown sources by changing confing in settings->?security->unknown sources
+Allow your device to install app from unknown sources by changing confing in settings->security->unknown sources
 
 Now download the APK directly from here https://goo.gl/MB9Jmk
 
