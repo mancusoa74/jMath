@@ -6,17 +6,23 @@ This is my first project in Kivy and hence quite simple.
 
 [![jMath](https://img.youtube.com/vi/R66iivvBRzY/0.jpg)](https://www.youtube.com/watch?v=R66iivvBRzY)
 
-it can be freeley downloaded for free here https://goo.gl/MB9Jmk 
+it can be freeley downloaded here https://goo.gl/MB9Jmk 
 
-It is based on a real needs, help my daugther to learn first grade math.
-
+# Game Play
 The game is trivial and it is asking the player to solve some simple operation.
 
 Once the player answers correctly 10 operations, she access to the next level.
 
-The are 4 level for the foour main operations. Once completed level 4 it starts again but with more difficulty (higher speed of the baloons)
+The are 4 level for the four main operations. Once completed level 4 it starts again but with more difficulty (higher speed of the baloons)
 
-A short video can be seen here: https://www.youtube.com/watch?v=6Qfiv11pUAg
+# Install
+
+Allow your device to install app from unknown sources by changing confing in settings->?security->unknown sources
+
+Now download the APK directly from here https://goo.gl/MB9Jmk
+
+Have fun!
+
 
 
 
