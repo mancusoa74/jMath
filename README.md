@@ -3,6 +3,9 @@ Simple Kivy (https://kivy.org/) Game for first grader Kids
 
 This is my first project in Kivy and hence quite simple.
 
+
+[![jMath](https://img.youtube.com/vi/R66iivvBRzY/0.jpg)](https://www.youtube.com/watch?v=R66iivvBRzY)
+
 it can be freeley downloaded for free here https://goo.gl/MB9Jmk 
 
 It is based on a real needs, help my daugther to learn first grade math.
