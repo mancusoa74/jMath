@@ -3,7 +3,7 @@ Simple Kivy (https://kivy.org/) Game for first grader Kids
 
 This is my first project in Kivy and hence quite simple.
 
-it can be freeley downloaded for free here:://goo.gl/MB9Jmk 
+it can be freeley downloaded for free here https:://goo.gl/MB9Jmk 
 
 It is based on a real needs, help my daugther to learn first grade math.
 
