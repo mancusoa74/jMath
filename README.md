@@ -6,7 +6,7 @@ This is my first project in Kivy and hence quite simple.
 
 [![jMath](https://img.youtube.com/vi/R66iivvBRzY/0.jpg)](https://www.youtube.com/watch?v=R66iivvBRzY)
 
-it can be freeley downloaded here https://goo.gl/MB9Jmk 
+it can be freeley downloaded here https://goo.gl/Me2Y3y
 
 # Game Play
 The game is trivial and it is asking the player to solve some simple operation.
