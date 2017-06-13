@@ -29,7 +29,7 @@ source.include_exts = py,png,jpg,kv,atlas,mp3,wav,ttf,otf
 #version.filename = %(source.dir)s/main.py
 
 # (str) Application versioning (method 2)
-version = 0.5.0
+version = 0.6.0
 
 # (list) Application requirements
 requirements = kivy

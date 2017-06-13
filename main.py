@@ -1,29 +1,30 @@
 # jMath by Antonio "monk" Mancuso - Giugno 2017
 # 
+# versione: 0.6.0 - aggiunta di un suggerimento
 # versione: 0.5.0 - salvataggio in locale dei punteggi per analisi successiva
 #				  - rimozione valore palloncino uguale a risultato
 #				  - uso di Animation in modo di rendere le animazioni uguali su tutti i device
 # versione: 0.4.0 - rilascio iniziale
 
-import kivy
 import random
 from datetime import datetime
+#import operator 
+import kivy
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.floatlayout import FloatLayout
-from kivy.properties import ObjectProperty,NumericProperty
+from kivy.properties import ObjectProperty#,NumericProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.utils import platform
-from kivy.core.audio import SoundLoader,Sound
+from kivy.core.audio import SoundLoader#,Sound
 from kivy.logger import Logger
-import operator 
-from kivy.uix.button import Button
+#from kivy.uix.button import Button
 from kivy.storage.jsonstore import JsonStore
 from kivy.animation  import Animation
 
-__version__ = '0.5.0'
+__version__ = '0.6.0'
 
 class KivyLoggerWrapper:
 	# Semplice wrapper del Logger di Kivy
@@ -70,14 +71,12 @@ class Aeroplano(Image):
 		self.sound_motore.play()
 		self.pos = (self.parent.width - 100, self.parent.height/4)
 		self.height = '100dp' # visualizza l'aeroplano nascosto
-		#Clock.schedule_once(self.vola, -1) # inizia il volo immediatamente
 		self.vola(None,None)
 
 	def vola(self, animation, widget):
 		Log.info("Animazione start {}".format(self.velocita))
 		#self.top = 0
 		anim = Animation(x=-self.width, d=self.velocita)
-		#anim.bind(on_complete=self.vola)
 		anim.start(self)
 
 class Palloncino(Widget):
@@ -86,6 +85,8 @@ class Palloncino(Widget):
 	velocita      = 8 # velocita' d'ascensione del palloncino (in secondi)
 	sound_wrong   = SoundLoader.load('data/wrong.wav') # effetto sonoro in caso di risposta errata
 	sound_correct = SoundLoader.load('data/correct.wav') # effetto sonoro in caso di risposta esatta
+	passaggi      = 0 # conta il numero di passaggi del palloncino
+	corretto      = False # indica se il palloncino contiene il valore corretto dell'operazione
 
 	def muovi(self, animation, widget):
 		Log.info("Animazione start {}".format(self.velocita))
@@ -105,7 +106,27 @@ class Palloncino(Widget):
 				Log.info("Risposta errata")
 				self.sound_wrong.play() # True = risposta errata
 			return True
+	
+	def oscura(self, dt):
+		# spegne l'illuminazione del palloncino
+		if self.corretto == True:
+			self.ids.palloncino_label.text = "[color=ffffff]" + str(self.value) + "[/color]"
 
+	def illumina(self):
+		# se il palloncino contiene il valore corretto lo illumina con la luce viola
+		if self.corretto == True:
+			self.ids.palloncino_label.text = "[color=#e006e8]" + str(self.value) + "[/color]"
+			Clock.schedule_once(self.oscura, 3)
+
+	def on_pos(self,obj,position):
+		if (int(position[1]) == self.parent.top):
+			self.passaggi += 1 # conta il numero di volte che il palloncino raggiunge il top dello schermo
+			Log.info(self.passaggi)
+			if self.passaggi == 3: # ogni 3 passaggi illumona il palloncino
+				Log.info("Suggerimento")
+				self.illumina()
+				self.passaggi = 0
+		
 	def stampa_valore(self):
 		# visualizza il valore assegnato al palloncino sul palloncino
 		self.ids.palloncino_label.text = str(self.value)
@@ -156,7 +177,6 @@ class jMathGame(FloatLayout):
 		self.data_store = JsonStore('jmath_store.json')
 		if self.current_date not in self.data_store:
 			self.data_store[self.current_date] = {'+': {'cuoricino':0, 'pollice':0}, '-': {'cuoricino':0, 'pollice':0}, 'x': {'cuoricino':0, 'pollice':0}, ':': {'cuoricino':0, 'pollice':0}}
-
 			
 	def soundtrack_suona(self):
 		# imposta la colonna sonora e la suona
@@ -326,10 +346,14 @@ class jMathGame(FloatLayout):
 		# assegna il valore dell'operazione al palloncino estratto a sorte
 		# palloncino_corretto.value = self.esegui_operazione()
 		palloncino_corretto.value = self.risultato_operazione
+		palloncino_corretto.corretto = True
+		palloncino_corretto.passaggi = 0
 		# assegna i valori estratti a sorte ai rimanenti pallonicni
 		for palloncino in self.palloncini:
 			if palloncino is not palloncino_corretto:
 				palloncino.value = valore_palloncini[i]
+				palloncino.corretto = False
+				palloncino.passaggi = 0
 				i += 1
 
 	def stampa_valore_palloncini(self):
@@ -356,7 +380,7 @@ class jMathGame(FloatLayout):
 		Log.info("numero_operazioni = {}".format(self.numero_operazioni))
 		Log.info("numero_operazioni_livello = {}".format(self.numero_operazioni_livello))
 		self.decidi_operatore() # assegna operatore in base al numero di livello
-			
+					
 		# il giocatore non ha ancora completato il livello in corso
 		if self.numero_operazioni < self.numero_operazioni_livello:
 			self.decidi_messaggio_aereo()
@@ -406,8 +430,9 @@ if __name__ == '__main__':
 	Log.info("jMath {} starting on {}".format(__version__, platform))
 	if platform == 'win':
 		# su windows imposto la finestra ad una tipica risoluzione mobile
-		Window.size = 540,960
-		Window._set_top(50)
+		Window.size = 540, 960
+		#Window._set_top(50)
+		Window.top = 50
 
 	from kivy.metrics import Metrics 
 	Log.info("DPI={}".format(Metrics.dpi))
