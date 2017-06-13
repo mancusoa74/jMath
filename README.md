@@ -1,4 +1,4 @@
-# jMath v0.4
+# jMath
 Simple Kivy (https://kivy.org/) Game for first grader Kids
 
 This is my first project in Kivy and hence quite simple.
