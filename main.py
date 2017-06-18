@@ -1,5 +1,6 @@
 # jMath by Antonio "monk" Mancuso - Giugno 2017
 # 
+# versione: 1.0.0 - refactoring per introduzione screen manager
 # versione: 0.6.0 - aggiunta di un suggerimento
 # versione: 0.5.0 - salvataggio in locale dei punteggi per analisi successiva
 #				  - rimozione valore palloncino uguale a risultato
@@ -14,17 +15,20 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.anchorlayout import AnchorLayout
 from kivy.properties import ObjectProperty#,NumericProperty
 from kivy.core.window import Window
 from kivy.clock import Clock
 from kivy.utils import platform
 from kivy.core.audio import SoundLoader#,Sound
 from kivy.logger import Logger
-#from kivy.uix.button import Button
+from kivy.uix.button import Button
 from kivy.storage.jsonstore import JsonStore
 from kivy.animation  import Animation
+from kivy.uix.screenmanager import ScreenManager, Screen, SwapTransition 
 
-__version__ = '0.6.0'
+
+__version__ = '1.0.0'
 
 class KivyLoggerWrapper:
 	# Semplice wrapper del Logger di Kivy
@@ -87,19 +91,25 @@ class Palloncino(Widget):
 	sound_correct = SoundLoader.load('data/correct.wav') # effetto sonoro in caso di risposta esatta
 	passaggi      = 0 # conta il numero di passaggi del palloncino
 	corretto      = False # indica se il palloncino contiene il valore corretto dell'operazione
+	animazione    = None
 
 	def muovi(self, animation, widget):
-		Log.info("Animazione start {}".format(self.velocita))
+		Log.info("Animazione Palloncini start {}".format(self.velocita))
 		self.top = 0
-		anim = Animation(y=self.parent.top, d=self.velocita)
-		anim.bind(on_complete=self.muovi)
-		anim.start(self)
+		self.animazione = Animation(y=self.parent.top, d=self.velocita)
+		self.animazione.bind(on_complete=self.muovi)
+		self.animazione.start(self)
+
+	def ferma(self):
+		Log.info("Animazione Palloncini stop {}".format(self.velocita))
+		self.animazione.cancel(self)
+
 
 	def on_touch_down(self, touch):
 		# gestisce il touch/click sul palloncino		
 		if self.collide_point(*touch.pos) and not self.disabled:
 			Log.info("Giocatore ha selezionato palloncino con valore {}".format(self.value))
-			if self.parent.updateTesto(self.value):
+			if self.parent.game.updateTesto(self.value):
 				Log.info("Risposta esatta")
 				self.sound_correct.play() # True = risposta esatta
 			else:
@@ -121,7 +131,7 @@ class Palloncino(Widget):
 	def on_pos(self,obj,position):
 		if (int(position[1]) == self.parent.top):
 			self.passaggi += 1 # conta il numero di volte che il palloncino raggiunge il top dello schermo
-			Log.info(self.passaggi)
+			Log.info("Passaggio #{}".format(self.passaggi))
 			if self.passaggi == 3: # ogni 3 passaggi illumona il palloncino
 				Log.info("Suggerimento")
 				self.illumina()
@@ -132,7 +142,7 @@ class Palloncino(Widget):
 		self.ids.palloncino_label.text = str(self.value)
 
 
-class jMathGame(FloatLayout):
+class jMathGame():
 	# classe principale del gioco. gestisce tutti gli aspetti del gioco e l'avanzamento tra i livelli
 	# al giocatore vengono richieste delle semplici operazioni elemntari (10) per ogni livello
 	# i possibili risultati sono stampati su tre palloncini che volano verso l'alto
@@ -145,13 +155,13 @@ class jMathGame(FloatLayout):
 	# in caso contrario il livello e l'operatore associato ricomincia dall'inizio
 	# una volta terminato il 4 ed ultimo livello, il gioco riprende dal livello 1 ma la velocita' dei palloncini aumenta e di conseguenza la difficolta' del livello
 	# il gioco non finisce mai. chiaramente ad un certo punto la velocita' dei palloncini sara' cosi' alta da rendere praticamente impossibile accedere al livello successivo
-	img_bg      = ObjectProperty(None)
-	palloncino1 = ObjectProperty(None)
-	palloncino2 = ObjectProperty(None)
-	palloncino3 = ObjectProperty(None)
-	testo       = ObjectProperty(None)
-	overlay     = ObjectProperty(None)
-	aeroplano   = ObjectProperty(None)
+	# img_bg      = ObjectProperty(None)
+	# palloncino1 = ObjectProperty(None)
+	# palloncino2 = ObjectProperty(None)
+	# palloncino3 = ObjectProperty(None)
+	# testo       = ObjectProperty(None)
+	# overlay     = ObjectProperty(None)
+	# aeroplano   = ObjectProperty(None)
 	sound_track = SoundLoader.load('data/music.wav') # colonna sonora
 	numero_sx   = 0 # primo valore dell'operazione
 	numero_dx   = 0 # secondo valore dell'operazione
@@ -167,22 +177,28 @@ class jMathGame(FloatLayout):
 	punteggio_icon_w = 0 # usato per adattare le dimensioni del cuoricino e del pollice in base allo schermo
 	data_store = 0 # JSON datastore per memorizzare i punteggi per ogni giorno
 	current_date = 0 # data corrente
-			
+	parent = None
 
-	def __init__(self, **kwargs):
-		super(jMathGame, self).__init__(**kwargs)
+	def __init__(self, parent):
 		# creo una lista di palloncini per comodita'
-		self.palloncini  = [self.palloncino1, self.palloncino2, self.palloncino3]
+		#self.palloncini  = [self.palloncino1, self.palloncino2, self.palloncino3]
+		self.parent = parent
+		Log.info(self.parent)
+		self.palloncini  = [self.parent.palloncino1, self.parent.palloncino2, self.parent.palloncino3]
+
 		self.current_date = datetime.now().strftime('%Y-%m-%d')
 		self.data_store = JsonStore('jmath_store.json')
 		if self.current_date not in self.data_store:
 			self.data_store[self.current_date] = {'+': {'cuoricino':0, 'pollice':0}, '-': {'cuoricino':0, 'pollice':0}, 'x': {'cuoricino':0, 'pollice':0}, ':': {'cuoricino':0, 'pollice':0}}
 			
+	def __del__(self):
+		Log.info("Distruttore jMathG object")
+
 	def soundtrack_suona(self):
 		# imposta la colonna sonora e la suona
 		Log.info("Suona colonna sonora")
 		self.sound_track.loop = True
-		self.sound_track.volume = 0.1
+		self.sound_track.volume = 0.5
 		self.sound_track.play()
 
 	def soundtrack_silenzio(self):
@@ -223,8 +239,8 @@ class jMathGame(FloatLayout):
 			punteggi[self.operatore]['pollice'] += 1
 
 		self.data_store[self.current_date] = punteggi # salva il punteggio aggiornato
-		self.testo.text = self.testo_operazione(tipo, valore)
-		self.ids.barra_punteggio.add_widget(widget)
+		self.parent.testo.text = self.testo_operazione(tipo, valore)
+		self.parent.ids.barra_punteggio.add_widget(widget)
 
 	def updateTesto(self, risultato_palloncino):
 		Log.info("updateTesto - {}".format(risultato_palloncino))
@@ -249,7 +265,7 @@ class jMathGame(FloatLayout):
 		# permette al giocatore di apprendere come avanzare nei livelli
 		Log.info("Visualizza valore corretto")
 		#self.testo.text = self.testo_operazione(True, self.esegui_operazione())
-		self.testo.text = self.testo_operazione(True, self.risultato_operazione)
+		self.parent.testo.text = self.testo_operazione(True, self.risultato_operazione)
 		Clock.schedule_once(self.iniziaLivello, 3) # # aspetta 3 secondi per ricominciare il livello
 
 	def estrai_valori(self, tipo):
@@ -283,12 +299,12 @@ class jMathGame(FloatLayout):
 	def pulisci_barra_punteggio(self):
 		# pulisce la barra dei punteggi e resetta il punteggio ed il numero corrente di operazioni
 		Log.info("Pulisci barra punteggio")
-		widgets_punteggio = self.ids.barra_punteggio.children
+		widgets_punteggio = self.parent.ids.barra_punteggio.children
 		for i in range (0, len(widgets_punteggio)):
-			self.ids.barra_punteggio.remove_widget(widgets_punteggio[0])
+			self.parent.ids.barra_punteggio.remove_widget(widgets_punteggio[0])
 		self.numero_operazioni = 0
 		self.punteggio = 0
-		self.iniziaLivello(0)
+		#self.iniziaLivello(0)
 
 
 	def decidi_operatore(self):
@@ -311,10 +327,10 @@ class jMathGame(FloatLayout):
 		Log.info("Decidi messaggio aereo")
 		if self.numero_operazioni == (self.numero_operazioni_livello / 2):
 				if self.punteggio >= (self.numero_operazioni_livello / 2) - 1:
-					self.ids.aeroplano.decolla("plane1")
+					self.parent.ids.aeroplano.decolla("plane1")
 					Log.info("Aereo1 selezionato")
 				else:
-					self.ids.aeroplano.decolla("plane2")
+					self.parent.ids.aeroplano.decolla("plane2")
 					Log.info("Aereo2 selezionato")
 		else:
 			Log.info("Nessun aereo selezioanto")
@@ -324,10 +340,10 @@ class jMathGame(FloatLayout):
 		# altrimenti visualizza messaggio di incoraggiamento
 		if self.numero_operazioni == self.numero_operazioni_livello - 1:
 			if self.punteggio >= (self.numero_operazioni_livello) - 2:
-				self.ids.aeroplano.decolla("plane1")
+				self.parent.ids.aeroplano.decolla("plane1")
 				Log.info("Aereo1 selezionato")
 			else:
-				self.ids.aeroplano.decolla("plane2")
+				self.parent.ids.aeroplano.decolla("plane2")
 				Log.info("Aereo2 selezionato")
 		else:
 			Log.info("Nessun aereo selezioanto")
@@ -367,19 +383,19 @@ class jMathGame(FloatLayout):
 		self.numero_sx, self.numero_dx = self.estrai_valori(True)
 		self.numero_operazioni += 1
 		self.risultato_operazione = self.esegui_operazione()
-		self.testo.text = self.testo_operazione(False, '?')
+		self.parent.testo.text = self.testo_operazione(False, '?')
 		Log.info("Valori operazione {}-{}".format(self.numero_sx, self.numero_dx))
 
 	def iniziaLivello(self, dt):
 		# gestione livelli gioco
 		Log.info("-----------------")
-		Log.info(self.size)
-		Log.info(self.ids.testo.font_size)
+		Log.info(self.parent.size)
+		Log.info(self.parent.ids.testo.font_size)
 		Log.info("livello = {}".format(self.livello))
 		Log.info("punteggio = {}".format(self.punteggio))
 		Log.info("numero_operazioni = {}".format(self.numero_operazioni))
 		Log.info("numero_operazioni_livello = {}".format(self.numero_operazioni_livello))
-		self.decidi_operatore() # assegna operatore in base al numero di livello
+		#self.decidi_operatore() # assegna operatore in base al numero di livello
 					
 		# il giocatore non ha ancora completato il livello in corso
 		if self.numero_operazioni < self.numero_operazioni_livello:
@@ -391,13 +407,23 @@ class jMathGame(FloatLayout):
 		else:
 			# siamo alla fine del livello
 			if self.punteggio == self.numero_operazioni_livello:
-				self.livello += 1
-				if self.livello == 5: 
+				#self.livello += 1
+				#if self.livello == 5: 
 					# ricomincia dal livello ed aumenta la difficolta'
-					self.livello = 1
-					self.aumenta_velocita_palloncini(0)
-			self.pulisci_barra_punteggio()	
-
+					#self.livello = 1
+					#self.aumenta_velocita_palloncini(0)#	
+				Log.info("Livello terminato")
+				Log.info(self.parent.parent)
+				self.enable_palloncini(False)				
+				self.pulisci_barra_punteggio()
+				for palloncino in self.palloncini:
+					palloncino.ferma()
+				self.parent.parent.current = 'inizio'
+			else:
+				self.pulisci_barra_punteggio()
+				self.iniziaLivello(0)
+				
+				
 	def aumenta_velocita_palloncini(self, dt):
 		# aumenta la velocita' di tutti i palloncini in modo uniforme
 		Log.info("Aumenta velocita' palloncini")
@@ -405,24 +431,103 @@ class jMathGame(FloatLayout):
 			palloncino.velocita -= 0.5
 
 	def set_metrics(self, dt):
-		w = self.size[0]
-		h = self.size[1]
+		Log.info("set_metrics")
+		w = self.parent.size[0]
+		h = self.parent.size[1]
 		Log.info("WIDTH={}".format(w))
 		Log.info("HEIGHT={}".format(h))
 		self.punteggio_icon_w  = w/10
-		Log.info("VEL PALLONCINO={}".format(self.ids.palloncino1.velocita))
-		self.iniziaLivello(0)
+		Log.info("VEL PALLONCINO={}".format(self.parent.ids.palloncino1.velocita))
+		#self.iniziaLivello(0)
 
+		Log.info("Inizia animazione palloncini")
 		for palloncino in self.palloncini:
 			palloncino.muovi(None, None)
-		
+
+class ScreenInizio(Screen):
+	button_plus = ObjectProperty(None)
+	musica_inizio = SoundLoader.load('data/init.mp3')
+
+	def __init__(self, **kwargs):
+		super(ScreenInizio, self).__init__(**kwargs)
+		Log.info("ScreenInizio __init__")
+
+	def on_enter(self):
+		Log.info("OnEnter ScreenInizio")
+		self.musica_inizio.loop = True
+		self.musica_inizio.volume = 0.5
+		self.musica_inizio.play()
+
+	def on_leave(self):
+		self.musica_inizio.stop()
+
+	def inizia_livello_piu(self):
+		App.get_running_app().operatore = '+'
+		self.parent.current = 'gioco'
+
+	def inizia_livello_meno(self):
+		App.get_running_app().operatore = '-'
+		self.parent.current = 'gioco'
+
+	def inizia_livello_per(self):
+		App.get_running_app().operatore = 'x'
+		self.parent.current = 'gioco'
+
+	def inizia_livello_diviso(self):
+		App.get_running_app().operatore = ':'
+		self.parent.current = 'gioco'
+
+	def inizia_opzioni(self):
+		#self.parent.current = 'impostazioni'
+		pass
+
+
+class ScreenImpostazioni(Screen):
+    pass
+
+class ScreenGioco(Screen):
+	img_bg      = ObjectProperty(None)
+	palloncino1 = ObjectProperty(None)
+	palloncino2 = ObjectProperty(None)
+	palloncino3 = ObjectProperty(None)
+	testo       = ObjectProperty(None)
+	overlay     = ObjectProperty(None)
+	aeroplano   = ObjectProperty(None)
+	game = None
+
+	def on_enter(self):
+		Log.info("OnEnter ScreenGioco")
+		if self.game == None:
+			jMathG = jMathGame(self) # inizializzazione del core del gioco
+			Log.info(jMathG)
+			self.game = jMathG
+
+		self.game.soundtrack_suona() # fa' partire la colonna sonora di fondo		
+		self.game.set_metrics(None)
+		self.game.operatore = App.get_running_app().operatore
+		self.game.iniziaLivello(0)
+
+		Log.info(self.game)
+
+	def on_leave(self):
+		Log.info("OnLEave ScreenGioco")
+		self.game.soundtrack_silenzio()
+
+class ScreenStatistiche(Screen):
+    pass
+
+
 class jMathApp(App):
+	operatore = None
+	sm = ScreenManager(transition=SwapTransition ())
+
 	def build(self):
 		# metodo specifico di Kivy
-		jMathG = jMathGame() # inizializzazione del core del gioco
-		jMathG.soundtrack_suona() # fa' partire la colonna sonora di fondo		
-		Clock.schedule_once(jMathG.set_metrics, 0) # uso questo trucchetto di chiamare il metodo tramite CLock per poter impostare le metrics
-		return jMathG
+		self.sm.add_widget(ScreenInizio(name='inizio'))
+		self.sm.add_widget(ScreenImpostazioni(name='impostazioni'))
+		self.sm.add_widget(ScreenGioco(name='gioco'))
+		self.sm.add_widget(ScreenStatistiche(name='statistiche'))
+		return self.sm
 
 if __name__ == '__main__':
 	# inizializzazione del Log
@@ -431,13 +536,6 @@ if __name__ == '__main__':
 	if platform == 'win':
 		# su windows imposto la finestra ad una tipica risoluzione mobile
 		Window.size = 540, 960
-		#Window._set_top(50)
 		Window.top = 50
-
-	from kivy.metrics import Metrics 
-	Log.info("DPI={}".format(Metrics.dpi))
-	Log.info("DENSITY={}".format(Metrics.density))
-	Log.info("FONT SCALE={}".format(Metrics.fontscale))
-	Log.info("100 DP to PX={}".format(kivy.metrics.dp(100)))
 
 	jMathApp().run()

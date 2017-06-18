@@ -6,7 +6,7 @@ This is my first project in Kivy and hence quite simple.
 
 [![jMath](https://img.youtube.com/vi/R66iivvBRzY/0.jpg)](https://www.youtube.com/watch?v=R66iivvBRzY)
 
-it can be freeley downloaded here https://goo.gl/nxTj8r
+it can be freeley downloaded here https://goo.gl/siuyae
 
 # Game Play
 The game is trivial and it is asking the player to solve some simple operation.
@@ -19,7 +19,7 @@ The are 4 level for the four main operations. Once completed level 4 it starts a
 
 Allow your device to install app from unknown sources by changing confing in settings->security->unknown sources
 
-Now download the APK directly from here https://goo.gl/nxTj8r
+Now download the APK directly from here https://goo.gl/siuyae
 
 Have fun!
 

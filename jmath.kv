@@ -1,6 +1,102 @@
 #:kivy 1.0
+#:set button_size_ratio 3
 
-<jMathGame>:
+
+<ScreenInizio>:
+    button_plus: button_plus
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: 'data/inizio_background.jpg'
+    Button:
+        id: button_plus
+        background_normal: 'data/piu.png' 
+        background_down: 'data/piu_down.png'
+        size_hint: (None, None)
+        width: root.width / button_size_ratio
+        height: root.width / button_size_ratio
+        center_x: root.width/4
+        y: 3 * (root.height/4)
+        #on_press: print("+")
+        on_press: root.inizia_livello_piu()
+	Button:
+		background_normal: 'data/meno.png'
+        background_down: 'data/meno_down.png'
+		size_hint: (None, None)
+		width: root.width / button_size_ratio
+		height: root.width / button_size_ratio
+		center_x: 3 * (root.width/4)
+		y: 3 * (root.height/4)
+        on_press: root.inizia_livello_meno()
+	Button:
+		#source: 'data/per.png'
+        background_normal: 'data/per.png'
+        background_down: 'data/per_down.png'
+		size_hint: (None, None)
+		width: root.width / button_size_ratio
+		height: root.width / button_size_ratio
+		center_x: root.width/4
+		y: 2 * (root.height/4)
+        on_press: root.inizia_livello_per()
+	Button:
+		# source: 'data/diviso.png'
+        background_normal: 'data/diviso.png'
+        background_down: 'data/diviso_down.png'
+		size_hint: (None, None)
+		width: root.width / button_size_ratio
+		height: root.width / button_size_ratio
+		center_x: 3 * (root.width/4)
+		y: 2 * (root.height/4)
+        on_press: root.inizia_livello_diviso()
+	Button:
+		background_normal: 'data/button_settings.png'
+        background_down: 'data/button_settings_down.png'
+        size_hint: (None, None)
+		width: root.width / (button_size_ratio +1 )
+        height: root.width / (button_size_ratio +1 )
+		center_x: 1* (root.width/4)
+		y: 1* (root.height/16)
+        on_press: root.inizia_opzioni()
+	Button:
+		background_normal: 'data/button_stats.png'
+        background_down: 'data/button_stats_down.png'
+		size_hint: (None, None)
+		width: root.width / (button_size_ratio +1 )
+        height: root.width / (button_size_ratio +1 )
+		center_x: 3 * (root.width/4)
+		y: 1* (root.height/16)
+        on_press: print("stats")
+
+
+
+<ScreenImpostazioni>:
+    canvas.before:
+        Color:
+            rgba: .94, .58, .12, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    # Label:
+    #     text: 'Colonna Sonora'
+    #     font_size: '20dp'
+    #     text_size: root.width, None
+    #     size: self.texture_size
+    #     halign: 'left'
+    #     size_hint_y: .125
+    #     #pos_hint: {'x': 0, 'center_y': .5}
+    #     x: root.width/6
+    #     y: root.height - self.height
+    # Button:
+    #     background_normal: 'data/pulsante_on.png'
+    #     background_down: 'data/pulsante_off.png'
+    #     size_hint_y: .125
+    #     size_hint_x: .3
+    #     #pos_hint: {'x': -100, 'center_y': .5}
+    #     #center_y: self.height/2
+    #     center_x: self.width
+
+<ScreenGioco>:
     img_bg: background
     palloncino1: palloncino1
     palloncino2: palloncino2
@@ -8,7 +104,6 @@
     testo: testo
     aeroplano: aeroplano
 
-    id: master
     Image:
         id: background
         source: 'data/screen4.jpg'
@@ -35,8 +130,9 @@
         id: palloncino3
         pos: (root.width) - (self.width/1) - 20, 0
     Aeroplano:
-    	id: aeroplano
-    	pos: 0,0
+        id: aeroplano
+        pos: 0,0
+
 
 <Cuoricino>:
     id: cuoricino
@@ -77,3 +173,9 @@
     pos_hint: {'None': 'None'}
     width: '300dp'
     height: '0dp' # a 0 per non far vedere l'oggetto
+
+
+<ScreenStatistiche>:
+    BoxLayout:
+        Button:
+            text: 'Statistiche'
